@@ -27,6 +27,7 @@
     .container {
       width: 100%;
       margin: 0 auto;
+      position: relative;
     }
 
     .header {
@@ -139,23 +140,36 @@
     }
 
     .config-section {
-      border-top: 0.5px solid #e0e0e0;
-      padding-top: 1rem;
-      max-height: 500px;
+      position: absolute;
+      top: 44px;
+      left: 1.5rem;
+      right: 1.5rem;
+      background: inherit;
+      border: 0.5px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 0;
+      max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease, padding-top 0.3s ease, opacity 0.3s ease;
-      opacity: 1;
+      transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+      opacity: 0;
+      z-index: 100;
+      box-shadow: none;
     }
 
-    .config-section.hidden {
-      max-height: 0;
-      padding-top: 0;
-      opacity: 0;
-      border-top: none;
+    .config-section.visible {
+      max-height: 500px;
+      opacity: 1;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     body.dark-mode .config-section {
+      background: #2a2a2a;
       border-color: #444444;
+    }
+
+    body.dark-mode .config-section.visible {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .config-title {
@@ -278,7 +292,7 @@
     <div class="progress-section" id="progressSection"></div>
 
     <!-- Configuration -->
-    <div class="config-section hidden">
+    <div class="config-section">
       <h3 class="config-title">Configuration</h3>
       
       <div class="config-grid">
@@ -334,7 +348,7 @@
     // Settings toggle
     settingsToggle.addEventListener('click', () => {
       showSettings = !showSettings;
-      configSection.classList.toggle('hidden');
+      configSection.classList.toggle('visible');
     });
 
     // Mode toggle
@@ -359,7 +373,25 @@
     timezoneSelect.addEventListener('change', updateProgress);
 
     function calculateProgress() {
-      const now = new Date();
+      let now = new Date();
+
+      // Apply timezone offset
+      const timezoneOffsets = {
+        'UTC': 0,
+        'EST': -5,
+        'CST': -6,
+        'MST': -7,
+        'PST': -8,
+        'GMT': 0,
+        'CET': 1,
+        'JST': 9,
+        'AEST': 10
+      };
+
+      const offset = (timezoneOffsets[timezone] || 0) * 60; // Convert to minutes
+      const localOffset = now.getTimezoneOffset(); // User's local offset in minutes
+      const diffMinutes = (offset * 60) - localOffset; // Difference in minutes
+      now = new Date(now.getTime() + diffMinutes * 60 * 1000);
 
       // Day progress
       const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
