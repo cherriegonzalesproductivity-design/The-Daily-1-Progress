@@ -144,7 +144,7 @@
       top: 44px;
       left: 1.5rem;
       right: 1.5rem;
-      background: inherit;
+      background: #ffffff;
       border: 0.5px solid #e0e0e0;
       border-radius: 8px;
       padding: 0;
@@ -159,7 +159,7 @@
     .config-section.visible {
       max-height: 500px;
       opacity: 1;
-      padding: 1rem 1.5rem;
+      padding: 0.75rem 1.5rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
@@ -172,10 +172,28 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
+    #saveBtn {
+      border: 0.5px solid !important;
+    }
+
+    body.dark-mode #saveBtn {
+      background: #cccccc !important;
+      color: #1a1a1a !important;
+      border-color: #cccccc !important;
+    }
+
+    .config-section > div[style*="border-top"] {
+      border-color: inherit;
+    }
+
+    body.dark-mode .config-section > div[style*="border-top"] {
+      border-color: #444444 !important;
+    }
+
     .config-title {
       font-size: 13px;
       font-weight: 500;
-      margin: 0 0 0.75rem 0;
+      margin: 0 0 0.5rem 0;
       color: #666666;
     }
 
@@ -185,24 +203,30 @@
 
     .config-grid {
       display: grid;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .config-grid > .form-group:nth-child(3) {
+      grid-column: 1 / -1;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
+      gap: 3px;
     }
 
     .form-label {
       display: block;
       font-size: 13px;
       font-weight: 500;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     input[type="date"],
     select {
-      padding: 8px 12px;
+      padding: 6px 10px;
       border: 0.5px solid #e0e0e0;
       border-radius: 8px;
       background: #f0f0f0;
@@ -232,11 +256,11 @@
     .button-group {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
 
     .option-btn {
-      padding: 8px 12px;
+      padding: 6px 10px;
       border: 0.5px solid #e0e0e0;
       border-radius: 8px;
       background: transparent;
@@ -307,14 +331,32 @@
           <label class="form-label" for="timezone">Timezone</label>
           <select id="timezone">
             <option value="UTC">UTC</option>
-            <option value="EST">EST</option>
-            <option value="CST">CST</option>
-            <option value="MST">MST</option>
-            <option value="PST">PST</option>
-            <option value="GMT">GMT</option>
-            <option value="CET">CET</option>
-            <option value="JST">JST</option>
-            <option value="AEST">AEST</option>
+            <optgroup label="Asia">
+              <option value="HKT">Hong Kong (HKT)</option>
+              <option value="SGT">Singapore (SGT)</option>
+              <option value="ICT">Bangkok (ICT)</option>
+              <option value="JST">Tokyo (JST)</option>
+              <option value="CST">Shanghai (CST)</option>
+              <option value="IST">India (IST)</option>
+              <option value="GST">Dubai (GST)</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="GMT">London (GMT)</option>
+              <option value="CET">Paris (CET)</option>
+              <option value="EET">Athens (EET)</option>
+            </optgroup>
+            <optgroup label="Americas">
+              <option value="EST">New York (EST)</option>
+              <option value="CST-AM">Chicago (CST)</option>
+              <option value="PST">Los Angeles (PST)</option>
+              <option value="EST-CA">Toronto (EST)</option>
+              <option value="CST-MX">Mexico City (CST)</option>
+              <option value="BRT">São Paulo (BRT)</option>
+            </optgroup>
+            <optgroup label="Australia">
+              <option value="AEST">Sydney (AEST)</option>
+              <option value="ACST">Adelaide (ACST)</option>
+            </optgroup>
           </select>
         </div>
 
@@ -327,6 +369,10 @@
           </div>
         </div>
       </div>
+
+      <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 0.5px solid #e0e0e0; border-color: inherit;">
+        <button id="saveBtn" class="option-btn" style="width: 100%; background: #333333; color: #ffffff; border-color: #333333; font-weight: 500; cursor: pointer;">Save</button>
+      </div>
     </div>
 
 
@@ -335,6 +381,7 @@
   <script>
     let isDarkMode = false;
     let weekStart = 'monday';
+    let timezone = 'UTC';
     let showSettings = false;
 
     const modeToggle = document.getElementById('modeToggle');
@@ -358,6 +405,12 @@
       modeToggle.textContent = isDarkMode ? '☀' : '🌙';
     });
 
+    // Timezone change
+    timezoneSelect.addEventListener('change', (e) => {
+      timezone = e.target.value;
+      updateProgress();
+    });
+
     // Week start toggle
     weekButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -368,30 +421,46 @@
       });
     });
 
+    // Save settings button
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.addEventListener('click', () => {
+      showSettings = false;
+      configSection.classList.remove('visible');
+    });
+
     // Input changes
     startDateInput.addEventListener('change', updateProgress);
-    timezoneSelect.addEventListener('change', updateProgress);
 
     function calculateProgress() {
       let now = new Date();
 
-      // Apply timezone offset
+      // Apply timezone offset - FIXED
       const timezoneOffsets = {
         'UTC': 0,
-        'EST': -5,
-        'CST': -6,
-        'MST': -7,
-        'PST': -8,
+        'HKT': 8,
+        'SGT': 8,
+        'ICT': 7,
+        'JST': 9,
+        'CST': 8,
+        'IST': 5.5,
+        'GST': 4,
         'GMT': 0,
         'CET': 1,
-        'JST': 9,
-        'AEST': 10
+        'EET': 2,
+        'EST': -5,
+        'CST-AM': -6,
+        'PST': -8,
+        'EST-CA': -5,
+        'CST-MX': -6,
+        'BRT': -3,
+        'AEST': 10,
+        'ACST': 9.5
       };
 
-      const offset = (timezoneOffsets[timezone] || 0) * 60; // Convert to minutes
-      const localOffset = now.getTimezoneOffset(); // User's local offset in minutes
-      const diffMinutes = (offset * 60) - localOffset; // Difference in minutes
-      now = new Date(now.getTime() + diffMinutes * 60 * 1000);
+      const targetOffsetHours = timezoneOffsets[timezone] || 0;
+      const localOffsetHours = now.getTimezoneOffset() / 60; // convert minutes to hours
+      const diffHours = targetOffsetHours - (-localOffsetHours); // proper timezone difference
+      now = new Date(now.getTime() + diffHours * 60 * 60 * 1000);
 
       // Day progress
       const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
